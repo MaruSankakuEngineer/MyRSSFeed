@@ -136,14 +136,14 @@ class RssWidgetProvider : AppWidgetProvider() {
                         WidgetSettings(
                             widgetId = appWidgetId,
                             selectedFeedId = null,
-                            displayCount = 50, // 50件に変更
+                            displayCount = 100, // 100件に変更
                             showImages = false
                         )
                     )
-                } else if (settings.displayCount != 50) {
-                    // 既存の設定を50件に更新
+                } else if (settings.displayCount != 100) {
+                    // 既存の設定を100件に更新
                     repository.updateWidgetSettings(
-                        settings.copy(displayCount = 50)
+                        settings.copy(displayCount = 100)
                     )
                 }
                 

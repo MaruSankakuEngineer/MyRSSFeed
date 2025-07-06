@@ -54,8 +54,8 @@ class RssWidgetFactory(
                 feeds = repository.getAllEnabledFeedsSync()
                 android.util.Log.d("RssWidget", "Found ${feeds.size} feeds")
                 
-                // フィルター設定に基づいて記事を取得（最大50件）
-                val displayCount = settings?.displayCount ?: 50
+                // フィルター設定に基づいて記事を取得（最大100件）
+                val displayCount = settings?.displayCount ?: 100
                 articles = if (settings?.selectedFeedId != null) {
                     android.util.Log.d("RssWidget", "Getting articles for specific feed: ${settings.selectedFeedId}")
                     repository.getLatestArticlesByFeedSync(
@@ -76,7 +76,7 @@ class RssWidgetFactory(
                 // 記事が見つからない場合は、すべてのフィードから最新記事を取得
                 if (articles.isEmpty() && feeds.isNotEmpty()) {
                     android.util.Log.d("RssWidget", "No articles found, trying to get from all feeds")
-                    articles = repository.getLatestArticlesSync(50)
+                    articles = repository.getLatestArticlesSync(100)
                     android.util.Log.d("RssWidget", "Retrieved ${articles.size} articles from all feeds")
                 }
                 

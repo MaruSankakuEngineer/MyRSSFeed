@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@drawable/widget_background"
-    android:padding="12dp"
+    android:padding="8dp"
     android:theme="@style/WidgetTheme"
     android:minHeight="200dp"
     android:minWidth="250dp">
@@ -17,7 +17,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingBottom="10dp"
+        android:paddingBottom="6dp"
         android:background="@android:color/transparent">
 
         <TextView
@@ -26,19 +26,19 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="📰 RSSフィード"
-            android:textSize="17sp"
+            android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="#FFFFFF"
             android:shadowColor="#000000"
             android:shadowDx="1"
             android:shadowDy="1"
-            android:shadowRadius="3"
+            android:shadowRadius="2"
             android:background="@android:color/transparent" />
 
         <ImageButton
             android:id="@+id/filter_button"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
             android:src="@drawable/ic_filter"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="フィルター"
@@ -54,9 +54,9 @@
         android:layout_weight="1"
         android:background="@android:color/transparent"
         android:divider="@android:color/transparent"
-        android:dividerHeight="4dp"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp"
+        android:dividerHeight="2dp"
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp"
         android:scrollbars="none" />
 
     <!-- 空の状態 -->
@@ -65,14 +65,14 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="記事を読み込み中..."
-        android:textSize="15sp"
+        android:textSize="13sp"
         android:textColor="#FFFFFF"
         android:gravity="center"
-        android:padding="20dp"
+        android:padding="16dp"
         android:shadowColor="#000000"
         android:shadowDx="1"
         android:shadowDy="1"
-        android:shadowRadius="3"
+        android:shadowRadius="2"
         android:background="@android:color/transparent"
         android:visibility="visible" />
 
