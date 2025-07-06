@@ -47,17 +47,13 @@
     </LinearLayout>
 
     <!-- 記事リスト -->
-    <ListView
+    <LinearLayout
         android:id="@+id/list_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:divider="@android:color/transparent"
-        android:dividerHeight="6dp"
-        android:scrollbars="none"
+        android:orientation="vertical"
         android:background="@android:color/transparent"
-        android:cacheColorHint="@android:color/transparent"
-        android:overScrollMode="never"
         android:paddingTop="4dp"
         android:paddingBottom="4dp" />
 

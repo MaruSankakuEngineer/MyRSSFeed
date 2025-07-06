@@ -1,5 +1,6 @@
 package com.example.myrssfeed.widget
 
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.widget.RemoteViews
@@ -8,7 +9,7 @@ import com.example.myrssfeed.R
 import com.example.myrssfeed.data.local.entity.RssArticle
 import com.example.myrssfeed.data.local.entity.RssFeed
 import com.example.myrssfeed.data.repository.RssRepository
-import com.example.myrssfeed.widget.RssWidgetProvider.Companion.EXTRA_ITEM_POSITION
+
 import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.util.*
@@ -129,13 +130,47 @@ class RssWidgetFactory(
             // 背景を明示的に設定
             views.setInt(R.id.article_container, "setBackgroundResource", R.drawable.article_item_background)
             
-            // クリックリスナーを設定
-            val intent = Intent().apply {
-                putExtra(EXTRA_ITEM_POSITION, position)
+            // 記事リンクが存在する場合のみクリックリスナーを設定
+            if (!article.link.isNullOrEmpty()) {
+                try {
+                    // 直接ブロードキャストインテントを作成
+                    val clickIntent = Intent(context, RssWidgetProvider::class.java).apply {
+                        action = "com.example.myrssfeed.ARTICLE_CLICKED"
+                        putExtra("widget_id", appWidgetId)
+                        putExtra("position", position)
+                        putExtra("article_id", article.id)
+                        putExtra("article_link", article.link)
+                        putExtra("article_title", article.title)
+                    }
+                    
+                    val pendingIntent = PendingIntent.getBroadcast(
+                        context,
+                        appWidgetId * 1000 + position, // ユニークなリクエストコード
+                        clickIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                    
+                    // デバッグ用：PendingIntentの内容をログ出力
+                    android.util.Log.d("RssWidget", "Creating pending intent with extras:")
+                    android.util.Log.d("RssWidget", "  widget_id = $appWidgetId")
+                    android.util.Log.d("RssWidget", "  position = $position")
+                    android.util.Log.d("RssWidget", "  article_id = ${article.id}")
+                    android.util.Log.d("RssWidget", "  article_link = ${article.link}")
+                    android.util.Log.d("RssWidget", "  article_title = ${article.title}")
+                    android.util.Log.d("RssWidget", "  request_code = ${appWidgetId * 1000 + position}")
+                    
+                    views.setOnClickPendingIntent(R.id.article_container, pendingIntent)
+                    views.setOnClickPendingIntent(R.id.article_title, pendingIntent)
+                    views.setOnClickPendingIntent(R.id.feed_info, pendingIntent)
+                    
+                    android.util.Log.d("RssWidget", "Set pending intent for article: ${article.title} (position=$position, link=${article.link})")
+                    android.util.Log.d("RssWidget", "Successfully set click listeners for article container, title, and feed info")
+                } catch (e: Exception) {
+                    android.util.Log.e("RssWidget", "Error creating pending intent for article: ${article.title}", e)
+                }
+            } else {
+                android.util.Log.w("RssWidget", "Article link is null or empty: ${article.title}")
             }
-            views.setOnClickFillInIntent(R.id.article_container, intent)
-            
-            android.util.Log.d("RssWidget", "Successfully created view for article: ${article.title}")
         } catch (e: Exception) {
             android.util.Log.e("RssWidget", "Error creating view for article", e)
             views.setTextViewText(R.id.article_title, "エラーが発生しました")

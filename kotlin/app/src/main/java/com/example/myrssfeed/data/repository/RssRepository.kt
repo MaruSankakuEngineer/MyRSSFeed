@@ -27,6 +27,8 @@ class RssRepository(
     
     suspend fun getFeedById(feedId: String): RssFeed? = rssFeedDao.getFeedById(feedId)
     
+    suspend fun getFeedByIdSync(feedId: String): RssFeed? = rssFeedDao.getFeedById(feedId)
+    
     suspend fun insertFeed(feed: RssFeed) = rssFeedDao.insertFeed(feed)
     
     suspend fun updateFeed(feed: RssFeed) = rssFeedDao.updateFeed(feed)

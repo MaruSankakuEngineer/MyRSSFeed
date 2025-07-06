@@ -8,8 +8,10 @@
     android:padding="12dp"
     android:clickable="true"
     android:focusable="true"
+    android:foreground="?android:attr/selectableItemBackground"
     android:minHeight="70dp"
-    android:layout_marginBottom="4dp">
+    android:layout_marginBottom="4dp"
+    android:descendantFocusability="blocksDescendants">
 
     <TextView
         android:id="@+id/article_title"
@@ -25,7 +27,9 @@
         android:shadowDx="1"
         android:shadowDy="1"
         android:shadowRadius="3"
-        android:background="@android:color/transparent" />
+        android:background="@android:color/transparent"
+        android:clickable="true"
+        android:focusable="true" />
 
     <TextView
         android:id="@+id/feed_info"
@@ -40,6 +44,8 @@
         android:shadowDx="1"
         android:shadowDy="1"
         android:shadowRadius="2"
-        android:background="@android:color/transparent" />
+        android:background="@android:color/transparent"
+        android:clickable="true"
+        android:focusable="true" />
 
 </LinearLayout> 
