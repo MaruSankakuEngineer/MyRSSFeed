@@ -54,16 +54,17 @@ class RssWidgetFactory(
                 feeds = repository.getAllEnabledFeedsSync()
                 android.util.Log.d("RssWidget", "Found ${feeds.size} feeds")
                 
-                // フィルター設定に基づいて記事を取得
+                // フィルター設定に基づいて記事を取得（最大50件）
+                val displayCount = settings?.displayCount ?: 50
                 articles = if (settings?.selectedFeedId != null) {
                     android.util.Log.d("RssWidget", "Getting articles for specific feed: ${settings.selectedFeedId}")
                     repository.getLatestArticlesByFeedSync(
                         settings.selectedFeedId,
-                        settings.displayCount
+                        displayCount
                     )
                 } else {
                     android.util.Log.d("RssWidget", "Getting articles from all feeds")
-                    repository.getLatestArticlesSync(settings?.displayCount ?: 5)
+                    repository.getLatestArticlesSync(displayCount)
                 }
                 android.util.Log.d("RssWidget", "Found ${articles.size} articles")
                 
@@ -75,7 +76,7 @@ class RssWidgetFactory(
                 // 記事が見つからない場合は、すべてのフィードから最新記事を取得
                 if (articles.isEmpty() && feeds.isNotEmpty()) {
                     android.util.Log.d("RssWidget", "No articles found, trying to get from all feeds")
-                    articles = repository.getLatestArticlesSync(5)
+                    articles = repository.getLatestArticlesSync(50)
                     android.util.Log.d("RssWidget", "Retrieved ${articles.size} articles from all feeds")
                 }
                 
@@ -133,9 +134,8 @@ class RssWidgetFactory(
             // 記事リンクが存在する場合のみクリックリスナーを設定
             if (!article.link.isNullOrEmpty()) {
                 try {
-                    // 直接ブロードキャストインテントを作成
-                    val clickIntent = Intent(context, RssWidgetProvider::class.java).apply {
-                        action = "com.example.myrssfeed.ARTICLE_CLICKED"
+                    // setOnClickFillInIntentを使用してクリックイベントを設定
+                    val fillInIntent = Intent().apply {
                         putExtra("widget_id", appWidgetId)
                         putExtra("position", position)
                         putExtra("article_id", article.id)
@@ -143,30 +143,13 @@ class RssWidgetFactory(
                         putExtra("article_title", article.title)
                     }
                     
-                    val pendingIntent = PendingIntent.getBroadcast(
-                        context,
-                        appWidgetId * 1000 + position, // ユニークなリクエストコード
-                        clickIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
+                    views.setOnClickFillInIntent(R.id.article_container, fillInIntent)
+                    views.setOnClickFillInIntent(R.id.article_title, fillInIntent)
+                    views.setOnClickFillInIntent(R.id.feed_info, fillInIntent)
                     
-                    // デバッグ用：PendingIntentの内容をログ出力
-                    android.util.Log.d("RssWidget", "Creating pending intent with extras:")
-                    android.util.Log.d("RssWidget", "  widget_id = $appWidgetId")
-                    android.util.Log.d("RssWidget", "  position = $position")
-                    android.util.Log.d("RssWidget", "  article_id = ${article.id}")
-                    android.util.Log.d("RssWidget", "  article_link = ${article.link}")
-                    android.util.Log.d("RssWidget", "  article_title = ${article.title}")
-                    android.util.Log.d("RssWidget", "  request_code = ${appWidgetId * 1000 + position}")
-                    
-                    views.setOnClickPendingIntent(R.id.article_container, pendingIntent)
-                    views.setOnClickPendingIntent(R.id.article_title, pendingIntent)
-                    views.setOnClickPendingIntent(R.id.feed_info, pendingIntent)
-                    
-                    android.util.Log.d("RssWidget", "Set pending intent for article: ${article.title} (position=$position, link=${article.link})")
-                    android.util.Log.d("RssWidget", "Successfully set click listeners for article container, title, and feed info")
+                    android.util.Log.d("RssWidget", "Set fill-in intent for article: ${article.title} (position=$position, link=${article.link})")
                 } catch (e: Exception) {
-                    android.util.Log.e("RssWidget", "Error creating pending intent for article: ${article.title}", e)
+                    android.util.Log.e("RssWidget", "Error creating fill-in intent for article: ${article.title}", e)
                 }
             } else {
                 android.util.Log.w("RssWidget", "Article link is null or empty: ${article.title}")

@@ -74,6 +74,9 @@ class RssRepository(
     suspend fun updateShowImages(widgetId: Int, showImages: Boolean) = 
         widgetSettingsDao.updateShowImages(widgetId, showImages)
     
+    suspend fun updateWidgetSettings(settings: WidgetSettings) = 
+        widgetSettingsDao.updateWidgetSettings(settings)
+    
     // RSSフィード更新
     suspend fun updateRssFeed(feed: RssFeed) {
         try {

@@ -8,8 +8,8 @@
     android:background="@drawable/widget_background"
     android:padding="12dp"
     android:theme="@style/WidgetTheme"
-    android:minHeight="120dp"
-    android:minWidth="200dp">
+    android:minHeight="200dp"
+    android:minWidth="250dp">
 
     <!-- ヘッダー -->
     <LinearLayout
@@ -46,16 +46,18 @@
 
     </LinearLayout>
 
-    <!-- 記事リスト -->
-    <LinearLayout
+    <!-- 記事リスト（スクロール可能） -->
+    <ListView
         android:id="@+id/list_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:orientation="vertical"
         android:background="@android:color/transparent"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="4dp"
         android:paddingTop="4dp"
-        android:paddingBottom="4dp" />
+        android:paddingBottom="4dp"
+        android:scrollbars="none" />
 
     <!-- 空の状態 -->
     <TextView

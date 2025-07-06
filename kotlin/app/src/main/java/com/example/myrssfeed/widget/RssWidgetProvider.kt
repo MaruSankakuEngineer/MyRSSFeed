@@ -75,7 +75,48 @@ class RssWidgetProvider : AppWidgetProvider() {
         
         val views = RemoteViews(context.packageName, R.layout.widget_rss_feed)
         
-        // 記事を直接配置
+        // RemoteViewsServiceを使用してListViewを設定
+        val serviceIntent = Intent(context, RssWidgetService::class.java).apply {
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        }
+        views.setRemoteAdapter(R.id.list_view, serviceIntent)
+        
+        // 空の状態を設定
+        views.setEmptyView(R.id.list_view, R.id.empty_view)
+        
+        // 記事クリック時のインテントテンプレートを設定
+        val clickIntentTemplate = Intent(context, RssWidgetProvider::class.java).apply {
+            action = "com.example.myrssfeed.ARTICLE_CLICKED"
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        }
+        val clickPendingIntentTemplate = PendingIntent.getBroadcast(
+            context,
+            appWidgetId,
+            clickIntentTemplate,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        views.setPendingIntentTemplate(R.id.list_view, clickPendingIntentTemplate)
+        
+        // ウィジェットの背景を明示的に設定
+        views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background)
+        
+        // フィルターボタンのクリックリスナーを設定
+        val filterIntent = Intent(context, RssWidgetProvider::class.java).apply {
+            action = "com.example.myrssfeed.FILTER_CLICKED"
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        }
+        val filterPendingIntent = PendingIntent.getBroadcast(
+            context,
+            appWidgetId,
+            filterIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        views.setOnClickPendingIntent(R.id.filter_button, filterPendingIntent)
+        
+        // ウィジェットを更新
+        appWidgetManager.updateAppWidget(appWidgetId, views)
+        
+        // データを更新
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val database = AppDatabase.getDatabase(context)
@@ -95,110 +136,23 @@ class RssWidgetProvider : AppWidgetProvider() {
                         WidgetSettings(
                             widgetId = appWidgetId,
                             selectedFeedId = null,
-                            displayCount = 5,
+                            displayCount = 50, // 50件に変更
                             showImages = false
                         )
                     )
+                } else if (settings.displayCount != 50) {
+                    // 既存の設定を50件に更新
+                    repository.updateWidgetSettings(
+                        settings.copy(displayCount = 50)
+                    )
                 }
                 
-                val articles = if (settings?.selectedFeedId != null) {
-                    repository.getLatestArticlesByFeedSync(settings.selectedFeedId, settings.displayCount)
-                } else {
-                    repository.getLatestArticlesSync(settings?.displayCount ?: 5)
-                }
-                
-                android.util.Log.d("RssWidget", "Retrieved ${articles.size} articles for widget $appWidgetId")
-                
-                // 既存の記事をクリア
-                views.removeAllViews(R.id.list_view)
-                
-                // 記事を直接配置
-                for (i in 0 until minOf(articles.size, 5)) {
-                    val article = articles[i]
-                    val articleViews = RemoteViews(context.packageName, R.layout.widget_item_article)
-                    
-                    // 記事タイトルを設定
-                    val title = article.title ?: "タイトルなし"
-                    articleViews.setTextViewText(R.id.article_title, title)
-                    
-                    // フィード名と日時を設定
-                    val feed = repository.getFeedByIdSync(article.feedId)
-                    val feedTitle = feed?.title ?: "Unknown"
-                    val dateStr = formatRelativeTime(article.publishedAt)
-                    val feedInfo = "$feedTitle • $dateStr"
-                    articleViews.setTextViewText(R.id.feed_info, feedInfo)
-                    
-                    // 背景を明示的に設定
-                    articleViews.setInt(R.id.article_container, "setBackgroundResource", R.drawable.article_item_background)
-                    
-                    // クリックリスナーを設定
-                    if (!article.link.isNullOrEmpty()) {
-                        try {
-                            val clickIntent = Intent(context, RssWidgetProvider::class.java).apply {
-                                action = "com.example.myrssfeed.ARTICLE_CLICKED"
-                                putExtra("widget_id", appWidgetId)
-                                putExtra("position", i)
-                                putExtra("article_id", article.id)
-                                putExtra("article_link", article.link)
-                                putExtra("article_title", article.title)
-                            }
-                            
-                            val pendingIntent = PendingIntent.getBroadcast(
-                                context,
-                                appWidgetId * 1000 + i,
-                                clickIntent,
-                                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                            )
-                            
-                            articleViews.setOnClickPendingIntent(R.id.article_container, pendingIntent)
-                            articleViews.setOnClickPendingIntent(R.id.article_title, pendingIntent)
-                            articleViews.setOnClickPendingIntent(R.id.feed_info, pendingIntent)
-                            
-                            android.util.Log.d("RssWidget", "Set pending intent for article: ${article.title} (position=$i, link=${article.link})")
-                        } catch (e: Exception) {
-                            android.util.Log.e("RssWidget", "Error creating pending intent for article: ${article.title}", e)
-                        }
-                    }
-                    
-                    // 記事をリストに追加
-                    views.addView(R.id.list_view, articleViews)
-                }
-                
-                // 記事が表示された場合は空の状態表示を非表示にする
-                if (articles.isNotEmpty()) {
-                    views.setViewVisibility(R.id.empty_view, android.view.View.GONE)
-                } else {
-                    views.setViewVisibility(R.id.empty_view, android.view.View.VISIBLE)
-                }
-                
-                // ウィジェットを更新
-                appWidgetManager.updateAppWidget(appWidgetId, views)
-                android.util.Log.d("RssWidget", "Widget updated with ${articles.size} articles")
+                android.util.Log.d("RssWidget", "Widget updated with RemoteViewsService")
                 
             } catch (e: Exception) {
                 android.util.Log.e("RssWidget", "Error updating widget", e)
             }
         }
-        
-        // ウィジェットの背景を明示的に設定
-        views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_background)
-        
-        // フィルターボタンのクリックリスナーを設定
-        val filterIntent = Intent(context, RssWidgetProvider::class.java).apply {
-            action = "com.example.myrssfeed.FILTER_CLICKED"
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-        }
-        val filterPendingIntent = PendingIntent.getBroadcast(
-            context,
-            appWidgetId,
-            filterIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-                views.setOnClickPendingIntent(R.id.filter_button, filterPendingIntent)
- 
-
-        
-
     }
     
     override fun onReceive(context: Context, intent: Intent) {
@@ -218,7 +172,6 @@ class RssWidgetProvider : AppWidgetProvider() {
             "com.example.myrssfeed.ARTICLE_CLICKED" -> {
                 android.util.Log.d("RssWidget", "Article clicked event received")
                 
-                // setOnClickFillInIntentから送信された情報を取得
                 val widgetId = intent.getIntExtra("widget_id", -1)
                 val position = intent.getIntExtra("position", -1)
                 val articleId = intent.getStringExtra("article_id")
@@ -226,15 +179,6 @@ class RssWidgetProvider : AppWidgetProvider() {
                 val articleTitle = intent.getStringExtra("article_title")
                 
                 android.util.Log.d("RssWidget", "Article clicked: widgetId=$widgetId, position=$position, articleId=$articleId, articleLink=$articleLink, title=$articleTitle")
-                
-                // デバッグ用：全てのインテントエクストラをログ出力
-                val extras = intent.extras
-                if (extras != null) {
-                    android.util.Log.d("RssWidget", "All intent extras:")
-                    for (key in extras.keySet()) {
-                        android.util.Log.d("RssWidget", "  $key = ${extras.get(key)}")
-                    }
-                }
                 
                 if (!articleLink.isNullOrEmpty()) {
                     try {
@@ -275,8 +219,6 @@ class RssWidgetProvider : AppWidgetProvider() {
         }
         context.startActivity(intent)
     }
-    
-
     
     private fun createRssApiService(): RssApiService {
         return Retrofit.Builder()
