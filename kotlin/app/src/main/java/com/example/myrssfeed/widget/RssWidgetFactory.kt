@@ -23,6 +23,19 @@ class RssWidgetFactory(
     private var feeds: List<RssFeed> = emptyList()
     private val dateFormat = SimpleDateFormat("MM/dd HH:mm", Locale.getDefault())
     
+    private fun formatRelativeTime(timestamp: Long): String {
+        val now = System.currentTimeMillis()
+        val diff = now - timestamp
+        
+        return when {
+            diff < 60 * 1000 -> "今" // 1分未満
+            diff < 60 * 60 * 1000 -> "${diff / (60 * 1000)}分前" // 1時間未満
+            diff < 24 * 60 * 60 * 1000 -> "${diff / (60 * 60 * 1000)}時間前" // 1日未満
+            diff < 7 * 24 * 60 * 60 * 1000 -> "${diff / (24 * 60 * 60 * 1000)}日前" // 1週間未満
+            else -> dateFormat.format(Date(timestamp)) // 1週間以上前は日付表示
+        }
+    }
+    
     override fun onCreate() {
         // 初期化処理
         android.util.Log.d("RssWidget", "Widget factory created for widget $appWidgetId")
@@ -35,19 +48,28 @@ class RssWidgetFactory(
                 android.util.Log.d("RssWidget", "onDataSetChanged called for widget $appWidgetId")
                 val settings = repository.getWidgetSettings(appWidgetId)
                 android.util.Log.d("RssWidget", "Widget settings: $settings")
+                android.util.Log.d("RssWidget", "Selected feed ID: ${settings?.selectedFeedId}")
                 
                 feeds = repository.getAllEnabledFeedsSync()
                 android.util.Log.d("RssWidget", "Found ${feeds.size} feeds")
                 
+                // フィルター設定に基づいて記事を取得
                 articles = if (settings?.selectedFeedId != null) {
+                    android.util.Log.d("RssWidget", "Getting articles for specific feed: ${settings.selectedFeedId}")
                     repository.getLatestArticlesByFeedSync(
                         settings.selectedFeedId,
                         settings.displayCount
                     )
                 } else {
+                    android.util.Log.d("RssWidget", "Getting articles from all feeds")
                     repository.getLatestArticlesSync(settings?.displayCount ?: 5)
                 }
                 android.util.Log.d("RssWidget", "Found ${articles.size} articles")
+                
+                // 記事の詳細ログを出力
+                articles.forEachIndexed { index, article ->
+                    android.util.Log.d("RssWidget", "Article $index: ${article.title} (${article.feedId}) - ${Date(article.publishedAt)}")
+                }
                 
                 // 記事が見つからない場合は、すべてのフィードから最新記事を取得
                 if (articles.isEmpty() && feeds.isNotEmpty()) {
@@ -100,11 +122,7 @@ class RssWidgetFactory(
             
             // フィード名と日時を設定
             val feedTitle = feed?.title ?: "Unknown"
-            val dateStr = try {
-                dateFormat.format(Date(article.publishedAt))
-            } catch (e: Exception) {
-                "日時不明"
-            }
+            val dateStr = formatRelativeTime(article.publishedAt)
             val feedInfo = "$feedTitle • $dateStr"
             views.setTextViewText(R.id.feed_info, feedInfo)
             

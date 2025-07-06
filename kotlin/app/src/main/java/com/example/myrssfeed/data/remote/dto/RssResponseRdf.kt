@@ -37,5 +37,17 @@ class RssItemRdf {
     var link: String = ""
     
     @field:Element(name = "date", required = false)
+    var date: String? = null
+    
+    @field:Element(name = "pubDate", required = false)
     var pubDate: String? = null
+    
+    @field:Element(name = "dc:date", required = false)
+    @Namespace(reference = "http://purl.org/dc/elements/1.1/", prefix = "dc")
+    var dcDate: String? = null
+    
+    // 日時を取得するメソッド（複数のフィールドから優先順位で取得）
+    fun getPublicationDate(): String? {
+        return pubDate ?: date ?: dcDate
+    }
 } 

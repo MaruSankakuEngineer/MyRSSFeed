@@ -86,6 +86,8 @@ class RssWidgetProvider : AppWidgetProvider() {
                 )
                 
                 val settings = repository.getWidgetSettings(appWidgetId)
+                android.util.Log.d("RssWidget", "Current widget settings: $settings")
+                
                 if (settings == null) {
                     android.util.Log.d("RssWidget", "Creating default settings for widget $appWidgetId")
                     repository.insertWidgetSettings(

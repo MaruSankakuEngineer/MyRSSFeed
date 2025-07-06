@@ -75,6 +75,7 @@ class RssRepository(
     // RSSフィード更新
     suspend fun updateRssFeed(feed: RssFeed) {
         try {
+            android.util.Log.d("RssRepository", "Updating RSS feed: ${feed.title} (${feed.url})")
             val responseBody = rssApiService.getRssFeed(feed.url)
             val xml = responseBody.string()
             
@@ -92,8 +93,11 @@ class RssRepository(
                 val rss = serializer.read(RssResponse::class.java, xml)
                 val channel = rss.channel
                 if (channel.items.isNotEmpty()) {
+                    android.util.Log.d("RssRepository", "RSS2.0 parsing successful, found ${channel.items.size} items")
                     articles = channel.items.mapNotNull { item ->
                         if (item.title.isNotEmpty() && item.link.isNotEmpty()) {
+                            val publishedAt = parseDate(item.pubDate)
+                            android.util.Log.d("RssRepository", "Article: ${item.title}, pubDate: ${item.pubDate}, parsed: ${Date(publishedAt)}")
                             RssArticle(
                                 id = generateArticleId(feed.id, item.link),
                                 feedId = feed.id,
@@ -101,12 +105,17 @@ class RssRepository(
                                 description = item.description,
                                 content = item.description,
                                 link = item.link,
-                                publishedAt = parseDate(item.pubDate),
+                                publishedAt = publishedAt,
                                 imageUrl = item.enclosure?.url
                             )
-                        } else null
+                        } else {
+                            android.util.Log.w("RssRepository", "Skipping article with empty title or link")
+                            null
+                        }
                     }
                     parsed = true
+                } else {
+                    parseError += "RSS2.0パース成功したが記事が見つかりません; "
                 }
             } catch (e: Exception) {
                 parseError += "RSS2.0パース失敗: ${e.message}; "
@@ -117,8 +126,11 @@ class RssRepository(
                 try {
                     val rdf = serializer.read(RssResponseRdf::class.java, xml)
                     if (rdf.items.isNotEmpty()) {
+                        android.util.Log.d("RssRepository", "RDF parsing successful, found ${rdf.items.size} items")
                         articles = rdf.items.mapNotNull { item ->
                             if (item.title.isNotEmpty() && item.link.isNotEmpty()) {
+                                val publishedAt = parseDate(item.getPublicationDate())
+                                android.util.Log.d("RssRepository", "Article: ${item.title}, pubDate: ${item.getPublicationDate()}, parsed: ${Date(publishedAt)}")
                                 RssArticle(
                                     id = generateArticleId(feed.id, item.link),
                                     feedId = feed.id,
@@ -126,10 +138,13 @@ class RssRepository(
                                     description = item.description,
                                     content = item.description,
                                     link = item.link,
-                                    publishedAt = parseDate(item.pubDate),
+                                    publishedAt = publishedAt,
                                     imageUrl = null
                                 )
-                            } else null
+                            } else {
+                                android.util.Log.w("RssRepository", "Skipping article with empty title or link")
+                                null
+                            }
                         }
                         parsed = true
                     } else {
@@ -145,14 +160,16 @@ class RssRepository(
             }
             
             if (articles.isNotEmpty()) {
+                android.util.Log.d("RssRepository", "Inserting ${articles.size} articles for feed: ${feed.title}")
                 rssArticleDao.insertArticles(articles)
             } else {
                 throw Exception("記事が見つかりませんでした")
             }
             
             rssFeedDao.updateLastUpdated(feed.id, System.currentTimeMillis())
+            android.util.Log.d("RssRepository", "Successfully updated feed: ${feed.title}")
         } catch (e: Exception) {
-            // エラーハンドリング
+            android.util.Log.e("RssRepository", "Error updating RSS feed: ${feed.title}", e)
             throw e
         }
     }
@@ -175,13 +192,42 @@ class RssRepository(
     }
     
     private fun parseDate(dateString: String?): Long {
-        if (dateString.isNullOrEmpty()) return System.currentTimeMillis()
-        
-        return try {
-            val formatter = SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.US)
-            formatter.parse(dateString)?.time ?: System.currentTimeMillis()
-        } catch (e: Exception) {
-            System.currentTimeMillis()
+        if (dateString.isNullOrEmpty()) {
+            android.util.Log.w("RssRepository", "Empty date string, using current time")
+            return System.currentTimeMillis()
         }
+        
+        // 複数の日時フォーマットを試行
+        val dateFormats = listOf(
+            "EEE, dd MMM yyyy HH:mm:ss Z",  // RFC 822 (標準)
+            "EEE, dd MMM yyyy HH:mm:ss z",  // タイムゾーン小文字
+            "EEE, dd MMM yyyy HH:mm Z",     // 秒なし
+            "EEE, dd MMM yyyy HH:mm z",     // 秒なし、タイムゾーン小文字
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",     // ISO 8601
+            "yyyy-MM-dd'T'HH:mm:ssZ",       // ISO 8601 with timezone
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", // ISO 8601 with milliseconds
+            "yyyy-MM-dd HH:mm:ss",          // シンプルな形式
+            "dd MMM yyyy HH:mm:ss Z",       // 曜日なし
+            "dd MMM yyyy HH:mm Z"           // 曜日なし、秒なし
+        )
+        
+        for (format in dateFormats) {
+            try {
+                val formatter = SimpleDateFormat(format, Locale.US)
+                formatter.isLenient = false
+                val date = formatter.parse(dateString)
+                if (date != null) {
+                    android.util.Log.d("RssRepository", "Successfully parsed date: $dateString with format: $format -> ${Date(date.time)}")
+                    return date.time
+                }
+            } catch (e: Exception) {
+                // このフォーマットではパースできなかった場合、次のフォーマットを試行
+                continue
+            }
+        }
+        
+        // すべてのフォーマットでパースに失敗した場合
+        android.util.Log.w("RssRepository", "Failed to parse date: $dateString, using current time")
+        return System.currentTimeMillis()
     }
 } 

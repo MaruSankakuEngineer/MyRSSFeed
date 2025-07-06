@@ -47,8 +47,14 @@ class FilterViewModel(
     
     fun updateSelectedFeed(feedId: String?) {
         viewModelScope.launch {
+            android.util.Log.d("FilterViewModel", "Updating selected feed to: $feedId")
             repository.updateSelectedFeed(appWidgetId, feedId)
             _selectedFeedId.value = feedId
+            
+            // 設定更新後にウィジェットを更新
+            _onWidgetUpdate.value?.invoke()
+            
+            android.util.Log.d("FilterViewModel", "Widget update callback invoked")
         }
     }
     

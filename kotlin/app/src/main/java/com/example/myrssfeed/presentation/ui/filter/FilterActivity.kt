@@ -106,11 +106,21 @@ fun FilterScreen(
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         viewModel.setWidgetUpdateCallback {
+            android.util.Log.d("FilterActivity", "Updating widget $appWidgetId")
             val intent = android.content.Intent(context, RssWidgetProvider::class.java).apply {
                 action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
                 putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, intArrayOf(appWidgetId))
             }
             context.sendBroadcast(intent)
+            
+            // 少し遅延して再度更新（確実に反映されるように）
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                val intent2 = android.content.Intent(context, RssWidgetProvider::class.java).apply {
+                    action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, intArrayOf(appWidgetId))
+                }
+                context.sendBroadcast(intent2)
+            }, 1000)
         }
         viewModel.loadFeeds()
         viewModel.loadCurrentSettings()
@@ -162,6 +172,7 @@ fun FilterScreen(
                     subtitle = "すべてのフィードの記事を表示",
                     isSelected = selectedFeedId == null,
                     onClick = {
+                        android.util.Log.d("FilterActivity", "All articles selected")
                         viewModel.updateSelectedFeed(null)
                         onFilterSelected(null)
                     }
@@ -175,6 +186,7 @@ fun FilterScreen(
                     subtitle = feed.description ?: "",
                     isSelected = selectedFeedId == feed.id,
                     onClick = {
+                        android.util.Log.d("FilterActivity", "Feed selected: ${feed.id}")
                         viewModel.updateSelectedFeed(feed.id)
                         onFilterSelected(feed.id)
                     }
