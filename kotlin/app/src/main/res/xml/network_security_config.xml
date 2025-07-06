@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">jin115.com</domain>
+        <domain includeSubdomains="true">mynavi.jp</domain>
+        <domain includeSubdomains="true">rss.cnn.com</domain>
+        <domain includeSubdomains="true">feeds.bbci.co.uk</domain>
+        <domain includeSubdomains="true">rss.itmedia.co.jp</domain>
+        <domain includeSubdomains="true">news.yahoo.co.jp</domain>
+        <domain includeSubdomains="true">www.engadget.com</domain>
+        <domain includeSubdomains="true">feeds.feedburner.com</domain>
+        <domain includeSubdomains="true">www.zdnet.com</domain>
+        <domain includeSubdomains="true">techcrunch.com</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config> 
