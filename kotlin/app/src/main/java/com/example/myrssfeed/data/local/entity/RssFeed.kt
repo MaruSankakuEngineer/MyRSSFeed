@@ -13,5 +13,6 @@ data class RssFeed(
     val updateInterval: Int,
     val isEnabled: Boolean = true,
     val sortOrder: Int = 0,
-    val category: String? = null // フィルター用カテゴリ
+    val category: String? = null, // フィルター用カテゴリ
+    val feedColor: String? = null // フィード名と更新時刻の色（HEX形式）
 ) 

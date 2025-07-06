@@ -1,5 +1,6 @@
 package com.example.myrssfeed
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -7,11 +8,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myrssfeed.data.local.database.AppDatabase
@@ -130,6 +133,7 @@ fun MainScreen(repository: RssRepository) {
                     feed = feed,
                     onDelete = { viewModel.deleteFeed(feed) },
                     onRefresh = { viewModel.refreshFeed(feed) },
+                    onColorSettings = { /* Implementation needed */ },
                     isLoading = isLoading
                 )
             }
@@ -194,8 +198,11 @@ fun FeedItem(
     feed: com.example.myrssfeed.data.local.entity.RssFeed,
     onDelete: () -> Unit,
     onRefresh: () -> Unit,
+    onColorSettings: () -> Unit,
     isLoading: Boolean
 ) {
+    val context = LocalContext.current
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -221,6 +228,21 @@ fun FeedItem(
             }
             Row {
                 IconButton(
+                    onClick = {
+                        val intent = Intent(context, com.example.myrssfeed.presentation.ui.color.FeedColorSettingsActivity::class.java).apply {
+                            putExtra(com.example.myrssfeed.presentation.ui.color.FeedColorSettingsActivity.EXTRA_FEED_ID, feed.id)
+                            putExtra(com.example.myrssfeed.presentation.ui.color.FeedColorSettingsActivity.EXTRA_FEED_TITLE, feed.title)
+                            putExtra(com.example.myrssfeed.presentation.ui.color.FeedColorSettingsActivity.EXTRA_CURRENT_FEED_COLOR, feed.feedColor)
+                        }
+                        context.startActivity(intent)
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "色設定"
+                    )
+                }
+                IconButton(
                     onClick = onRefresh,
                     enabled = !isLoading
                 ) {
@@ -230,7 +252,10 @@ fun FeedItem(
                             strokeWidth = 2.dp
                         )
                     } else {
-                        Icons.Default.Refresh
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "更新"
+                        )
                     }
                 }
                 TextButton(onClick = onDelete) {

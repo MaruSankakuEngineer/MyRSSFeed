@@ -128,6 +128,20 @@ class RssWidgetFactory(
             val feedInfo = "$feedTitle • $dateStr"
             views.setTextViewText(R.id.feed_info, feedInfo)
             
+            // フィードの色を適用
+            android.util.Log.d("RssWidget", "Feed: ${feed?.title}, feedColor: ${feed?.feedColor}")
+            if (feed != null && !feed.feedColor.isNullOrEmpty()) {
+                try {
+                    val feedColor = android.graphics.Color.parseColor(feed.feedColor)
+                    views.setTextColor(R.id.feed_info, feedColor)
+                    android.util.Log.d("RssWidget", "Applied color: ${feed.feedColor} to feed: ${feed.title}")
+                } catch (e: Exception) {
+                    android.util.Log.e("RssWidget", "Error parsing feed color: ${feed.feedColor}", e)
+                }
+            } else {
+                android.util.Log.d("RssWidget", "No color set for feed: ${feed?.title}")
+            }
+            
             // 背景を明示的に設定
             views.setInt(R.id.article_container, "setBackgroundResource", R.drawable.article_item_background)
             

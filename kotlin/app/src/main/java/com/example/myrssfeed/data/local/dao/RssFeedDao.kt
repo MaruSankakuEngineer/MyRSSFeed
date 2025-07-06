@@ -29,4 +29,7 @@ interface RssFeedDao {
     
     @Query("UPDATE rss_feeds SET lastUpdated = :timestamp WHERE id = :feedId")
     suspend fun updateLastUpdated(feedId: String, timestamp: Long)
+    
+    @Query("UPDATE rss_feeds SET feedColor = :color WHERE id = :feedId")
+    suspend fun updateFeedColor(feedId: String, color: String?)
 } 

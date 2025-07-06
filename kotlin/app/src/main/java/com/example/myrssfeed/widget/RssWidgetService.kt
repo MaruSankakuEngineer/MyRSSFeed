@@ -16,6 +16,8 @@ class RssWidgetService : RemoteViewsService() {
             android.appwidget.AppWidgetManager.INVALID_APPWIDGET_ID
         )
         
+        android.util.Log.d("RssWidgetService", "Creating factory for widget $appWidgetId")
+        
         val database = AppDatabase.getDatabase(applicationContext)
         val repository = RssRepository(
             database.rssFeedDao(),

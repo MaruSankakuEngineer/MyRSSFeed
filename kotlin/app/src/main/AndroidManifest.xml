@@ -32,6 +32,11 @@
             android:exported="false"
             android:theme="@style/Theme.MyRSSFeed" />
         
+        <activity
+            android:name=".presentation.ui.color.FeedColorSettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MyRSSFeed" />
+        
         <!-- RSSウィジェット -->
         <receiver
             android:name=".widget.RssWidgetProvider"

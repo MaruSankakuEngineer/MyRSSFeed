@@ -77,6 +77,10 @@ class RssRepository(
     suspend fun updateWidgetSettings(settings: WidgetSettings) = 
         widgetSettingsDao.updateWidgetSettings(settings)
     
+    // 色設定関連
+    suspend fun updateFeedColor(feedId: String, color: String?) = 
+        rssFeedDao.updateFeedColor(feedId, color)
+    
     // RSSフィード更新
     suspend fun updateRssFeed(feed: RssFeed) {
         try {
