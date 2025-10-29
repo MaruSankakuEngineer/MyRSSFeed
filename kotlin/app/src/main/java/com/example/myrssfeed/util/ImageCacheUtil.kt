@@ -15,7 +15,9 @@ object ImageCacheUtil {
     }
 
     fun getCachedImageFile(context: Context, imageUrl: String): File {
-        val fileName = imageUrl.hashCode().toString() + ".jpg"
+        // hashCode()は負の値になる可能性があるため、絶対値を使用してファイル名を生成
+        val hash = imageUrl.hashCode().toLong() and 0xffffffffL
+        val fileName = hash.toString() + ".jpg"
         return File(getCacheDir(context), fileName)
     }
 
