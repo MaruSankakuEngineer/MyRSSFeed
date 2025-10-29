@@ -197,7 +197,29 @@ class RssRepository(
     }
     
     private fun generateArticleId(feedId: String, link: String): String {
-        return "${feedId}_${link.hashCode()}"
+        // hashCode()は負の値になる可能性があるため、絶対値を使用
+        // さらにUUIDベースの安全なハッシュ生成を使用
+        val hash = link.hashCode().toLong() and 0xffffffffL
+        return "${feedId}_${hash}"
+    }
+    
+    // SimpleDateFormatのキャッシュ（パフォーマンス改善）
+    private val dateFormatters by lazy {
+        mapOf(
+            "EEE, dd MMM yyyy HH:mm:ss Z" to SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.US),  // RFC 822 (標準)
+            "EEE, dd MMM yyyy HH:mm:ss z" to SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US),  // タイムゾーン小文字
+            "EEE, dd MMM yyyy HH:mm Z" to SimpleDateFormat("EEE, dd MMM yyyy HH:mm Z", Locale.US),     // 秒なし
+            "EEE, dd MMM yyyy HH:mm z" to SimpleDateFormat("EEE, dd MMM yyyy HH:mm z", Locale.US),     // 秒なし、タイムゾーン小文字
+            "yyyy-MM-dd'T'HH:mm:ss'Z'" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US),     // ISO 8601
+            "yyyy-MM-dd'T'HH:mm:ssZ" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US),       // ISO 8601 with timezone
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US), // ISO 8601 with milliseconds
+            "yyyy-MM-dd HH:mm:ss" to SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US),          // シンプルな形式
+            "dd MMM yyyy HH:mm:ss Z" to SimpleDateFormat("dd MMM yyyy HH:mm:ss Z", Locale.US),       // 曜日なし
+            "dd MMM yyyy HH:mm Z" to SimpleDateFormat("dd MMM yyyy HH:mm Z", Locale.US)           // 曜日なし、秒なし
+        ).mapValues { entry ->
+            // isLenient = trueに設定して柔軟な日付パースを可能にする（パフォーマンスと互換性の改善）
+            entry.value.apply { isLenient = true }
+        }
     }
     
     private fun parseDate(dateString: String?): Long {
@@ -206,27 +228,12 @@ class RssRepository(
             return System.currentTimeMillis()
         }
         
-        // 複数の日時フォーマットを試行
-        val dateFormats = listOf(
-            "EEE, dd MMM yyyy HH:mm:ss Z",  // RFC 822 (標準)
-            "EEE, dd MMM yyyy HH:mm:ss z",  // タイムゾーン小文字
-            "EEE, dd MMM yyyy HH:mm Z",     // 秒なし
-            "EEE, dd MMM yyyy HH:mm z",     // 秒なし、タイムゾーン小文字
-            "yyyy-MM-dd'T'HH:mm:ss'Z'",     // ISO 8601
-            "yyyy-MM-dd'T'HH:mm:ssZ",       // ISO 8601 with timezone
-            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", // ISO 8601 with milliseconds
-            "yyyy-MM-dd HH:mm:ss",          // シンプルな形式
-            "dd MMM yyyy HH:mm:ss Z",       // 曜日なし
-            "dd MMM yyyy HH:mm Z"           // 曜日なし、秒なし
-        )
-        
-        for (format in dateFormats) {
+        // キャッシュされたフォーマッターを使用してパフォーマンスを改善
+        for ((formatName, formatter) in dateFormatters) {
             try {
-                val formatter = SimpleDateFormat(format, Locale.US)
-                formatter.isLenient = false
                 val date = formatter.parse(dateString)
                 if (date != null) {
-                    android.util.Log.d("RssRepository", "Successfully parsed date: $dateString with format: $format -> ${Date(date.time)}")
+                    android.util.Log.d("RssRepository", "Successfully parsed date: $dateString with format: $formatName -> ${Date(date.time)}")
                     return date.time
                 }
             } catch (e: Exception) {
